@@ -1,0 +1,592 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Alert, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { CreditCard, Banknote, User, Building2, Upload } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import Button from '@/components/Button';
+import OrderItem from '@/components/OrderItem';
+import { useOrderStore } from '@/store/order-store';
+import { useAuthStore } from '@/store/auth-store';
+import { rooms } from '@/mocks/rooms';
+import * as ImagePicker from 'expo-image-picker';
+
+export default function OrderScreen() {
+  const router = useRouter();
+  const { items, orderInfo, setOrderInfo, completeOrder } = useOrderStore();
+  const { user, isLoggedIn } = useAuthStore();
+  
+  const [name, setName] = useState(orderInfo.customerName || '');
+  const [role, setRole] = useState<'Lecturer' | 'Student' | null>(orderInfo.role);
+  const [room, setRoom] = useState<string | null>(orderInfo.room);
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Online Banking' | 'Upload Receipt' | null>(orderInfo.paymentMethod);
+  const [receiptImage, setReceiptImage] = useState<string | null>(orderInfo.paymentProof || null);
+  
+  // Pre-fill name if user is logged in
+  useEffect(() => {
+    if (isLoggedIn && user) {
+      setName(user.name);
+    }
+  }, [isLoggedIn, user]);
+  
+  const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  const pickImage = async () => {
+    // Request permission
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow access to your photo library to upload a receipt.');
+      return;
+    }
+    
+    // Launch image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    
+    if (!result.canceled) {
+      setReceiptImage(result.assets[0].uri);
+    }
+  };
+  
+  const handleSubmit = () => {
+    if (!name) {
+      Alert.alert('Error', 'Please enter your name');
+      return;
+    }
+    
+    if (!role) {
+      Alert.alert('Error', 'Please select your role');
+      return;
+    }
+    
+    if (role === 'Lecturer' && !room) {
+      Alert.alert('Error', 'Please select a room');
+      return;
+    }
+    
+    if (!paymentMethod) {
+      Alert.alert('Error', 'Please select a payment method');
+      return;
+    }
+    
+    if (paymentMethod === 'Upload Receipt' && !receiptImage) {
+      Alert.alert('Error', 'Please upload a receipt image');
+      return;
+    }
+    
+    if (items.length === 0) {
+      Alert.alert('Error', 'Your cart is empty. Please add items to your order.');
+      return;
+    }
+    
+    setOrderInfo({
+      customerName: name,
+      role,
+      room: role === 'Lecturer' ? room : null,
+      paymentMethod,
+      paymentProof: receiptImage,
+    });
+    
+    // Pass the user ID to associate the order with the logged-in user
+    completeOrder(isLoggedIn && user ? user.email : undefined);
+    router.push('/pickup');
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Place Your Order</Text>
+        
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Items</Text>
+          
+          {items.length > 0 ? (
+            <View style={styles.itemsContainer}>
+              {items.map(item => (
+                <OrderItem key={item.id} item={item} />
+              ))}
+              
+              <View style={styles.totalContainer}>
+                <Text style={styles.totalLabel}>Total:</Text>
+                <Text style={styles.totalAmount}>RM {totalAmount.toFixed(2)}</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyCart}>
+              <Text style={styles.emptyCartText}>Your cart is empty</Text>
+              <Button 
+                title="Browse Menu" 
+                onPress={() => router.push('/menu')}
+                variant="outline"
+                style={styles.browseButton}
+              />
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Information</Text>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Name</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter your name"
+              placeholderTextColor={Colors.textLight}
+            />
+          </View>
+          
+          <Text style={styles.inputLabel}>Role</Text>
+          <View style={styles.roleContainer}>
+            <Pressable
+              style={[
+                styles.roleButton,
+                role === 'Student' && styles.roleButtonActive
+              ]}
+              onPress={() => setRole('Student')}
+            >
+              <Text 
+                style={[
+                  styles.roleButtonText,
+                  role === 'Student' && styles.roleButtonTextActive
+                ]}
+              >
+                Student
+              </Text>
+            </Pressable>
+            
+            <Pressable
+              style={[
+                styles.roleButton,
+                role === 'Lecturer' && styles.roleButtonActive
+              ]}
+              onPress={() => setRole('Lecturer')}
+            >
+              <Text 
+                style={[
+                  styles.roleButtonText,
+                  role === 'Lecturer' && styles.roleButtonTextActive
+                ]}
+              >
+                Lecturer
+              </Text>
+            </Pressable>
+          </View>
+          
+          {role === 'Lecturer' && (
+            <View style={styles.roomContainer}>
+              <Text style={styles.inputLabel}>Select Room for Delivery</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.roomScroll}
+              >
+                {rooms.map(r => (
+                  <Pressable
+                    key={r.id}
+                    style={[
+                      styles.roomButton,
+                      room === r.id && styles.roomButtonActive
+                    ]}
+                    onPress={() => setRoom(r.id)}
+                  >
+                    <Text 
+                      style={[
+                        styles.roomButtonText,
+                        room === r.id && styles.roomButtonTextActive
+                      ]}
+                    >
+                      {r.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Payment Method</Text>
+          
+          <View style={styles.paymentContainer}>
+            <Pressable
+              style={[
+                styles.paymentButton,
+                paymentMethod === 'Cash' && styles.paymentButtonActive
+              ]}
+              onPress={() => setPaymentMethod('Cash')}
+            >
+              <Banknote 
+                size={24} 
+                color={paymentMethod === 'Cash' ? Colors.background : Colors.text} 
+              />
+              <Text 
+                style={[
+                  styles.paymentButtonText,
+                  paymentMethod === 'Cash' && styles.paymentButtonTextActive
+                ]}
+              >
+                Cash
+              </Text>
+            </Pressable>
+            
+            <Pressable
+              style={[
+                styles.paymentButton,
+                paymentMethod === 'Online Banking' && styles.paymentButtonActive
+              ]}
+              onPress={() => setPaymentMethod('Online Banking')}
+            >
+              <CreditCard 
+                size={24} 
+                color={paymentMethod === 'Online Banking' ? Colors.background : Colors.text} 
+              />
+              <Text 
+                style={[
+                  styles.paymentButtonText,
+                  paymentMethod === 'Online Banking' && styles.paymentButtonTextActive
+                ]}
+              >
+                Online Banking
+              </Text>
+            </Pressable>
+            
+            <Pressable
+              style={[
+                styles.paymentButton,
+                paymentMethod === 'Upload Receipt' && styles.paymentButtonActive
+              ]}
+              onPress={() => setPaymentMethod('Upload Receipt')}
+            >
+              <Upload 
+                size={24} 
+                color={paymentMethod === 'Upload Receipt' ? Colors.background : Colors.text} 
+              />
+              <Text 
+                style={[
+                  styles.paymentButtonText,
+                  paymentMethod === 'Upload Receipt' && styles.paymentButtonTextActive
+                ]}
+              >
+                Upload Receipt
+              </Text>
+            </Pressable>
+          </View>
+          
+          {paymentMethod === 'Online Banking' && (
+            <View style={styles.bankingInfoContainer}>
+              <Text style={styles.bankingInfoTitle}>Bank Transfer Details</Text>
+              <View style={styles.accountContainer}>
+                <Text style={styles.accountLabel}>Account Number:</Text>
+                <Text style={styles.accountNumber}>11212500723805</Text>
+              </View>
+              <Text style={styles.bankingInfoText}>
+                Please transfer the exact amount of RM {totalAmount.toFixed(2)} to the account above.
+              </Text>
+              <Text style={styles.bankingInfoText}>
+                Your order will be prepared once payment is confirmed.
+              </Text>
+            </View>
+          )}
+          
+          {paymentMethod === 'Upload Receipt' && (
+            <View style={styles.receiptContainer}>
+              <Text style={styles.receiptText}>
+                Please upload your payment receipt as proof of payment
+              </Text>
+              
+              {receiptImage ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image 
+                    source={{ uri: receiptImage }} 
+                    style={styles.imagePreview} 
+                    resizeMode="cover"
+                  />
+                  <Button 
+                    title="Change Image" 
+                    onPress={pickImage}
+                    variant="outline"
+                    style={styles.changeImageButton}
+                  />
+                </View>
+              ) : (
+                <Button 
+                  title="Upload Receipt Image" 
+                  onPress={pickImage}
+                  icon={<Upload size={18} color={Colors.background} />}
+                  style={styles.uploadButton}
+                />
+              )}
+            </View>
+          )}
+        </View>
+        
+        <Button 
+          title="Confirm Order" 
+          onPress={handleSubmit}
+          disabled={
+            items.length === 0 || 
+            !name || 
+            !role || 
+            (role === 'Lecturer' && !room) || 
+            !paymentMethod ||
+            (paymentMethod === 'Upload Receipt' && !receiptImage)
+          }
+          style={styles.confirmButton}
+        />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 24,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 16,
+  },
+  itemsContainer: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 16,
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  totalLabel: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  totalAmount: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  emptyCart: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyCartText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+    marginBottom: 16,
+  },
+  browseButton: {
+    minWidth: 150,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  roleContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  roleButton: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  roleButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  roleButtonText: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+  roleButtonTextActive: {
+    color: Colors.background,
+  },
+  roomContainer: {
+    marginBottom: 16,
+  },
+  roomScroll: {
+    paddingVertical: 8,
+  },
+  roomButton: {
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    padding: 12,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  roomButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  roomButtonText: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+  roomButtonTextActive: {
+    color: Colors.background,
+  },
+  paymentContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  paymentButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minWidth: 120,
+  },
+  paymentButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  paymentButtonText: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+    marginLeft: 8,
+  },
+  paymentButtonTextActive: {
+    color: Colors.background,
+  },
+  bankingInfoContainer: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  bankingInfoTitle: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  accountContainer: {
+    backgroundColor: '#F0F8FF', // Light blue background
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#B3E0FF', // Light blue border
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountLabel: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    marginRight: 8,
+  },
+  accountNumber: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  bankingInfoText: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.text,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  receiptContainer: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  receiptText: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.text,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  uploadButton: {
+    width: '100%',
+  },
+  imagePreviewContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  changeImageButton: {
+    width: '100%',
+  },
+  confirmButton: {
+    marginTop: 8,
+  },
+});
