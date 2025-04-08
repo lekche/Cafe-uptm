@@ -1,0 +1,87 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { ShoppingBag } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import PromotionCard from '@/components/PromotionCard';
+import Button from '@/components/Button';
+import { promotions } from '@/mocks/promotions';
+import { useOrderStore } from '@/store/order-store';
+
+export default function PromotionsScreen() {
+  const router = useRouter();
+  const items = useOrderStore(state => state.items);
+  
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  const navigateToOrder = () => {
+    router.push('/order');
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Special Promotions</Text>
+        <Text style={styles.subtitle}>Save more with our combo deals</Text>
+        
+        <View style={styles.promotionsList}>
+          {promotions.map((promotion) => (
+            <PromotionCard key={promotion.id} promotion={promotion} />
+          ))}
+        </View>
+      </ScrollView>
+
+      {totalItems > 0 && (
+        <View style={styles.footer}>
+          <Button 
+            title={`View Order (${totalItems} items)`}
+            onPress={navigateToOrder}
+            icon={<ShoppingBag size={18} color={Colors.background} />}
+          />
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+    marginBottom: 24,
+  },
+  promotionsList: {
+    marginBottom: 16,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.background,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+});
