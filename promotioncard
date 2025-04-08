@@ -1,0 +1,114 @@
+import React from 'react';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { Tag, PlusCircle } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import { Promotion } from '@/mocks/promotions';
+import { useOrderStore } from '@/store/order-store';
+
+type PromotionCardProps = {
+  promotion: Promotion;
+};
+
+export default function PromotionCard({ promotion }: PromotionCardProps) {
+  const addItem = useOrderStore(state => state.addItem);
+
+  const handleAddPromotion = () => {
+    addItem(promotion, true);
+  };
+
+  return (
+    <Pressable 
+      style={styles.container}
+      onPress={handleAddPromotion}
+    >
+      <View style={styles.savingBadge}>
+        <Text style={styles.savingText}>Save RM {promotion.savings.toFixed(2)}</Text>
+      </View>
+      <Image 
+        source={{ uri: promotion.image }} 
+        style={styles.image} 
+        resizeMode="cover"
+      />
+      <View style={styles.content}>
+        <Text style={styles.name}>{promotion.name}</Text>
+        <Text style={styles.description}>{promotion.description}</Text>
+        <View style={styles.priceContainer}>
+          <View style={styles.priceRow}>
+            <Text style={styles.originalPrice}>RM {promotion.originalPrice.toFixed(2)}</Text>
+            <Text style={styles.discountedPrice}>RM {promotion.discountedPrice.toFixed(2)}</Text>
+          </View>
+          <PlusCircle size={24} color={Colors.primary} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    position: 'relative',
+  },
+  savingBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: Colors.promotion,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+    zIndex: 1,
+  },
+  savingText: {
+    fontSize: Fonts.sizes.xs,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  image: {
+    width: '100%',
+    height: 150,
+  },
+  content: {
+    padding: 16,
+  },
+  name: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.textLight,
+    marginBottom: 12,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  originalPrice: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.textLight,
+    textDecorationLine: 'line-through',
+    marginRight: 8,
+  },
+  discountedPrice: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+});
