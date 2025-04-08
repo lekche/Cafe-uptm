@@ -1,0 +1,82 @@
+import React from 'react';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { PlusCircle } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import { MenuItem as MenuItemType } from '@/mocks/menu';
+import { useOrderStore } from '@/store/order-store';
+
+type MenuItemProps = {
+  item: MenuItemType;
+};
+
+export default function MenuItem({ item }: MenuItemProps) {
+  const addItem = useOrderStore(state => state.addItem);
+
+  const handleAddItem = () => {
+    addItem(item, false);
+  };
+
+  return (
+    <Pressable 
+      style={styles.container}
+      onPress={handleAddItem}
+    >
+      <Image 
+        source={{ uri: item.image }} 
+        style={styles.image} 
+        resizeMode="cover"
+      />
+      <View style={styles.content}>
+        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.description}>{item.description}</Text>
+        <View style={styles.footer}>
+          <Text style={styles.price}>RM {item.price.toFixed(2)}</Text>
+          <PlusCircle size={24} color={Colors.primary} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  image: {
+    width: '100%',
+    height: 150,
+  },
+  content: {
+    padding: 16,
+  },
+  name: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.textLight,
+    marginBottom: 12,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  price: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+});
