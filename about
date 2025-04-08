@@ -1,0 +1,159 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Linking, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Phone, MapPin } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+
+export default function AboutTabScreen() {
+  const handlePhoneCall = () => {
+    Linking.openURL('tel:0194164154');
+  };
+
+  const handleOpenMap = () => {
+    Linking.openURL('https://maps.app.goo.gl/Yx5Nt8Ld5Ld5Ld5L6');
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>About Café UPTM</Text>
+        
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Contact Us</Text>
+          <View style={styles.contactItem}>
+            <Text style={styles.contactLabel}>Manager:</Text>
+            <Text style={styles.contactValue}>Siti Zaitul Azma</Text>
+          </View>
+          
+          <Pressable style={styles.contactButton} onPress={handlePhoneCall}>
+            <Phone size={20} color={Colors.primary} />
+            <Text style={styles.contactButtonText}>019 416 4154</Text>
+          </Pressable>
+        </View>
+        
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Location</Text>
+          <Pressable style={styles.locationButton} onPress={handleOpenMap}>
+            <MapPin size={20} color={Colors.primary} />
+            <Text style={styles.locationText}>
+              Jalan 6/91, Taman Shamelin Perkasa, Cheras, 56100 Kuala Lumpur, Malaysia
+            </Text>
+          </Pressable>
+        </View>
+        
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Opening Hours</Text>
+          <View style={styles.hoursItem}>
+            <Text style={styles.hoursDay}>Monday - Friday</Text>
+            <Text style={styles.hoursTime}>7:30 AM - 6:00 PM</Text>
+          </View>
+          <View style={styles.hoursItem}>
+            <Text style={styles.hoursDay}>Saturday</Text>
+            <Text style={styles.hoursTime}>8:00 AM - 3:00 PM</Text>
+          </View>
+          <View style={styles.hoursItem}>
+            <Text style={styles.hoursDay}>Sunday</Text>
+            <Text style={styles.hoursTime}>Closed</Text>
+          </View>
+        </View>
+        
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>About Us</Text>
+          <Text style={styles.aboutText}>
+            Café UPTM is the heart of campus dining, serving delicious and affordable meals to students and staff. 
+            Our mission is to provide quality food with excellent service in a welcoming environment.
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 24,
+  },
+  card: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 12,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  contactLabel: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+    width: 80,
+  },
+  contactValue: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    flex: 1,
+  },
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  contactButtonText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.primary,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  locationText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    flex: 1,
+    marginLeft: 8,
+  },
+  hoursItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  hoursDay: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+  },
+  hoursTime: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    fontWeight: '500',
+  },
+  aboutText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    lineHeight: 24,
+  },
+});
