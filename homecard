@@ -1,0 +1,58 @@
+import React from 'react';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { useRouter } from 'expo-router';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+
+type HomeCardProps = {
+  title: string;
+  icon: React.ReactNode;
+  route: string;
+  color: string;
+};
+
+export default function HomeCard({ title, icon, route, color }: HomeCardProps) {
+  const router = useRouter();
+
+  const handlePress = () => {
+    router.push(route);
+  };
+
+  return (
+    <Pressable 
+      style={[styles.container, { backgroundColor: color }]}
+      onPress={handlePress}
+    >
+      <View style={styles.iconContainer}>
+        {icon}
+      </View>
+      <Text style={styles.title}>{title}</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '48%',
+    aspectRatio: 1,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  iconContainer: {
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.background,
+    textAlign: 'center',
+  },
+});
