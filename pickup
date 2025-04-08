@@ -1,0 +1,290 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { CheckCircle, Clock, User, MapPin } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import Button from '@/components/Button';
+import { useOrderStore } from '@/store/order-store';
+import { rooms } from '@/mocks/rooms';
+
+export default function PickupScreen() {
+  const router = useRouter();
+  const { items, orderInfo, assignedStaff, resetOrder } = useOrderStore();
+  
+  const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  const selectedRoom = orderInfo.room 
+    ? rooms.find(r => r.id === orderInfo.room)?.name 
+    : null;
+  
+  const handleBackToHome = () => {
+    resetOrder();
+    router.replace('/(tabs)');
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <CheckCircle size={64} color={Colors.success} />
+          <Text style={styles.title}>Order Confirmed!</Text>
+          <Text style={styles.subtitle}>Your order is being prepared</Text>
+        </View>
+        
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Order Details</Text>
+          
+          <View style={styles.orderItems}>
+            {items.map(item => (
+              <View key={item.id} style={styles.orderItem}>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemQuantity}>x{item.quantity}</Text>
+                </View>
+                <Text style={styles.itemPrice}>RM {(item.price * item.quantity).toFixed(2)}</Text>
+              </View>
+            ))}
+          </View>
+          
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalLabel}>Total Amount:</Text>
+            <Text style={styles.totalAmount}>RM {totalAmount.toFixed(2)}</Text>
+          </View>
+          
+          <View style={styles.paymentMethod}>
+            <Text style={styles.paymentLabel}>Payment Method:</Text>
+            <Text style={styles.paymentValue}>{orderInfo.paymentMethod}</Text>
+          </View>
+
+          {/* Show receipt image if uploaded */}
+          {orderInfo.paymentMethod === 'Upload Receipt' && orderInfo.paymentProof && (
+            <View style={styles.receiptContainer}>
+              <Text style={styles.receiptLabel}>Payment Receipt:</Text>
+              <Image 
+                source={{ uri: orderInfo.paymentProof }} 
+                style={styles.receiptImage} 
+                resizeMode="cover"
+              />
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Pickup Information</Text>
+          
+          <View style={styles.infoItem}>
+            <Clock size={20} color={Colors.primary} />
+            <Text style={styles.infoText}>Ready in approximately 15-20 minutes</Text>
+          </View>
+          
+          {orderInfo.role === 'Lecturer' && selectedRoom && (
+            <View style={styles.infoItem}>
+              <MapPin size={20} color={Colors.primary} />
+              <Text style={styles.infoText}>Delivery to: {selectedRoom}</Text>
+            </View>
+          )}
+          
+          {orderInfo.role === 'Student' && (
+            <View style={styles.infoItem}>
+              <MapPin size={20} color={Colors.primary} />
+              <Text style={styles.infoText}>Pickup at: Café UPTM Counter</Text>
+            </View>
+          )}
+          
+          <View style={styles.infoItem}>
+            <User size={20} color={Colors.primary} />
+            <Text style={styles.infoText}>Prepared by: {assignedStaff}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.staffCard}>
+          <Image 
+            source={{ uri: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?q=80&w=500' }} 
+            style={styles.staffImage}
+            resizeMode="cover"
+          />
+          <View style={styles.staffInfo}>
+            <Text style={styles.staffTitle}>Your order is being prepared by:</Text>
+            <Text style={styles.staffName}>{assignedStaff}</Text>
+            <Text style={styles.staffMessage}>"I'm preparing your order with care!"</Text>
+          </View>
+        </View>
+        
+        <Button 
+          title="Back to Home" 
+          onPress={handleBackToHome}
+          style={styles.homeButton}
+        />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+  },
+  card: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 16,
+  },
+  orderItems: {
+    marginBottom: 16,
+  },
+  orderItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemName: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  itemQuantity: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.textLight,
+  },
+  itemPrice: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 16,
+    marginBottom: 12,
+  },
+  totalLabel: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+  totalAmount: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  paymentMethod: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  paymentLabel: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    marginRight: 8,
+  },
+  paymentValue: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  receiptContainer: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: 12,
+  },
+  receiptLabel: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '500',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  receiptImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    marginLeft: 12,
+  },
+  staffCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  staffImage: {
+    width: '100%',
+    height: 150,
+  },
+  staffInfo: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  staffTitle: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+    marginBottom: 8,
+  },
+  staffName: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  staffMessage: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    fontStyle: 'italic',
+  },
+  homeButton: {
+    marginBottom: 24,
+  },
+});
