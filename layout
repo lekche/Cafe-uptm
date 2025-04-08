@@ -1,0 +1,71 @@
+import React from 'react';
+import { Tabs } from 'expo-router';
+import { Utensils, Tag, Users, Info, User } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+
+export default function TabLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textLight,
+        tabBarStyle: {
+          backgroundColor: Colors.background,
+          borderTopColor: Colors.border,
+        },
+        headerStyle: {
+          backgroundColor: Colors.primary,
+        },
+        headerTintColor: Colors.background,
+        headerTitleStyle: {
+          fontWeight: '700',
+        },
+        headerTitle: "Café UPTM", // Set title for all tab screens
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          tabBarLabel: "Home",
+          tabBarIcon: ({ color }) => <Utensils size={24} color={color} />,
+        }}
+        redirect={true}
+      />
+      <Tabs.Screen
+        name="menu-tab"
+        options={{
+          tabBarLabel: "Menu",
+          tabBarIcon: ({ color }) => <Utensils size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="promotions-tab"
+        options={{
+          tabBarLabel: "Promotions",
+          tabBarIcon: ({ color }) => <Tag size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="staff-tab"
+        options={{
+          tabBarLabel: "Staff",
+          tabBarIcon: ({ color }) => <Users size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="about-tab"
+        options={{
+          tabBarLabel: "About",
+          tabBarIcon: ({ color }) => <Info size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="account-tab"
+        options={{
+          tabBarLabel: "Account",
+          tabBarIcon: ({ color }) => <User size={24} color={color} />,
+        }}
+      />
+    </Tabs>
+  );
+}
