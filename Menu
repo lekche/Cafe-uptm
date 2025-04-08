@@ -1,0 +1,150 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { ShoppingBag } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import MenuItem from '@/components/MenuItem';
+import Button from '@/components/Button';
+import { menuItems, MenuItem as MenuItemType } from '@/mocks/menu';
+import { useOrderStore } from '@/store/order-store';
+
+export default function MenuScreen() {
+  const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const items = useOrderStore(state => state.items);
+  
+  const categories = [
+    { id: null, name: 'All' },
+    { id: 'main', name: 'Main' },
+    { id: 'side', name: 'Side' },
+    { id: 'protein', name: 'Protein' },
+  ];
+
+  const filteredItems = selectedCategory 
+    ? menuItems.filter(item => item.category === selectedCategory)
+    : menuItems;
+
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  const navigateToOrder = () => {
+    router.push('/order');
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.categoryContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+          {categories.map(category => (
+            <Pressable
+              key={category.id || 'all'}
+              style={[
+                styles.categoryButton,
+                selectedCategory === category.id && styles.categoryButtonActive
+              ]}
+              onPress={() => setSelectedCategory(category.id)}
+            >
+              <Text 
+                style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.categoryTextActive
+                ]}
+              >
+                {category.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Menu</Text>
+        <Text style={styles.subtitle}>Select items to add to your order</Text>
+        
+        <View style={styles.menuList}>
+          {filteredItems.map((item) => (
+            <MenuItem key={item.id} item={item} />
+          ))}
+        </View>
+      </ScrollView>
+
+      {totalItems > 0 && (
+        <View style={styles.footer}>
+          <Button 
+            title={`View Order (${totalItems} items)`}
+            onPress={navigateToOrder}
+            icon={<ShoppingBag size={18} color={Colors.background} />}
+          />
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  categoryContainer: {
+    backgroundColor: Colors.background,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  categoryScroll: {
+    paddingHorizontal: 16,
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.card,
+  },
+  categoryButtonActive: {
+    backgroundColor: Colors.primary,
+  },
+  categoryText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+  },
+  categoryTextActive: {
+    color: Colors.background,
+    fontWeight: '600',
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+    marginBottom: 24,
+  },
+  menuList: {
+    marginBottom: 16,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.background,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+});
