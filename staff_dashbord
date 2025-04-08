@@ -1,0 +1,568 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Alert, Image, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { ShoppingBag, CheckCircle, Clock, User, LogOut, Package, X, Image as ImageIcon } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import Button from '@/components/Button';
+import { useOrderStore, CompletedOrder } from '@/store/order-store';
+import { useAuthStore } from '@/store/auth-store';
+
+export default function StaffDashboardScreen() {
+  const router = useRouter();
+  const orderHistory = useOrderStore(state => state.orderHistory);
+  const { staff, isStaffLoggedIn, staffLogout } = useAuthStore();
+  
+  const [activeOrders, setActiveOrders] = useState<CompletedOrder[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<CompletedOrder[]>([]);
+  const [activeTab, setActiveTab] = useState('active');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  
+  useEffect(() => {
+    // For staff dashboard, show all orders (not just assigned to this staff)
+    // For demo purposes, we'll consider the first half as active and the rest as completed
+    const midpoint = Math.ceil(orderHistory.length / 2);
+    setActiveOrders(orderHistory.slice(0, midpoint));
+    setCompletedOrders(orderHistory.slice(midpoint));
+  }, [orderHistory]);
+  
+  if (!isStaffLoggedIn || !staff) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Staff Login Required</Text>
+          <Text style={styles.emptyText}>You need to login as staff to access this page</Text>
+          <Button 
+            title="Go to Staff Login" 
+            onPress={() => router.push('/staff-login')}
+            style={styles.loginButton}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          onPress: () => {
+            staffLogout();
+            router.replace('/(tabs)');
+          },
+          style: 'destructive'
+        }
+      ]
+    );
+  };
+  
+  const handleCompleteOrder = (orderId: string) => {
+    Alert.alert(
+      'Complete Order',
+      'Mark this order as completed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Complete', 
+          onPress: () => {
+            // Move order from active to completed
+            const orderToComplete = activeOrders.find(order => order.id === orderId);
+            if (orderToComplete) {
+              setActiveOrders(activeOrders.filter(order => order.id !== orderId));
+              setCompletedOrders([orderToComplete, ...completedOrders]);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const openImageModal = (imageUri: string) => {
+    setSelectedImage(imageUri);
+    setImageModalVisible(true);
+  };
+
+  const closeImageModal = () => {
+    setImageModalVisible(false);
+    setSelectedImage(null);
+  };
+  
+  const renderOrderItem = ({ item }: { item: CompletedOrder }) => {
+    const date = new Date(item.date);
+    const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    
+    return (
+      <View style={styles.orderCard}>
+        <View style={styles.orderHeader}>
+          <Text style={styles.orderTitle}>Order #{item.id.slice(-4)}</Text>
+          <View style={styles.dateContainer}>
+            <Clock size={14} color={Colors.background} />
+            <Text style={styles.dateText}>{formattedDate}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.orderDetails}>
+          <View style={styles.customerInfo}>
+            <User size={16} color={Colors.primary} />
+            <Text style={styles.customerName}>{item.orderInfo.customerName}</Text>
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>{item.orderInfo.role}</Text>
+            </View>
+          </View>
+          
+          {item.orderInfo.role === 'Lecturer' && item.orderInfo.room && (
+            <View style={styles.deliveryInfo}>
+              <Text style={styles.deliveryText}>Delivery to Room: {item.orderInfo.room}</Text>
+            </View>
+          )}
+          
+          <View style={styles.itemsList}>
+            {item.items.map((orderItem) => (
+              <View key={`${item.id}-${orderItem.id}`} style={styles.itemRow}>
+                <Text style={styles.itemQuantity}>{orderItem.quantity}x</Text>
+                <Text style={styles.itemName}>{orderItem.name}</Text>
+                <Text style={styles.itemPrice}>RM {(orderItem.price * orderItem.quantity).toFixed(2)}</Text>
+              </View>
+            ))}
+          </View>
+          
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total:</Text>
+            <Text style={styles.totalAmount}>RM {item.totalAmount.toFixed(2)}</Text>
+          </View>
+          
+          <View style={styles.paymentMethod}>
+            <Text style={styles.paymentText}>
+              Payment: <Text style={styles.paymentValue}>{item.orderInfo.paymentMethod}</Text>
+            </Text>
+          </View>
+
+          {/* Receipt Image Section */}
+          {item.orderInfo.paymentMethod === 'Upload Receipt' && item.orderInfo.paymentProof && (
+            <View style={styles.receiptContainer}>
+              <Text style={styles.receiptTitle}>Payment Receipt:</Text>
+              <Pressable onPress={() => openImageModal(item.orderInfo.paymentProof!)}>
+                <View style={styles.receiptImageContainer}>
+                  <Image 
+                    source={{ uri: item.orderInfo.paymentProof }} 
+                    style={styles.receiptThumbnail} 
+                    resizeMode="cover"
+                  />
+                  <View style={styles.viewImageOverlay}>
+                    <ImageIcon size={20} color={Colors.background} />
+                    <Text style={styles.viewImageText}>View</Text>
+                  </View>
+                </View>
+              </Pressable>
+            </View>
+          )}
+          
+          {activeTab === 'active' && (
+            <Button 
+              title="Mark as Completed" 
+              onPress={() => handleCompleteOrder(item.id)}
+              icon={<CheckCircle size={18} color={Colors.background} />}
+              style={styles.completeButton}
+            />
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Staff Dashboard</Text>
+          <Text style={styles.subtitle}>Welcome, {staff.name}</Text>
+          <Text style={styles.staffId}>Position: {staff.position}</Text>
+        </View>
+        <Pressable style={styles.logoutButton} onPress={handleLogout}>
+          <LogOut size={24} color={Colors.primary} />
+        </Pressable>
+      </View>
+      
+      <View style={styles.tabContainer}>
+        <Pressable
+          style={[styles.tab, activeTab === 'active' && styles.activeTab]}
+          onPress={() => setActiveTab('active')}
+        >
+          <Package size={16} color={activeTab === 'active' ? Colors.primary : Colors.textLight} />
+          <Text 
+            style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}
+          >
+            Active Orders ({activeOrders.length})
+          </Text>
+        </Pressable>
+        
+        <Pressable
+          style={[styles.tab, activeTab === 'completed' && styles.activeTab]}
+          onPress={() => setActiveTab('completed')}
+        >
+          <CheckCircle size={16} color={activeTab === 'completed' ? Colors.primary : Colors.textLight} />
+          <Text 
+            style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}
+          >
+            Completed ({completedOrders.length})
+          </Text>
+        </Pressable>
+      </View>
+      
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {activeTab === 'active' ? (
+          activeOrders.length > 0 ? (
+            <FlatList
+              data={activeOrders}
+              renderItem={renderOrderItem}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <ShoppingBag size={64} color={Colors.textLight} />
+              <Text style={styles.emptyTitle}>No Active Orders</Text>
+              <Text style={styles.emptyText}>There are no active orders to prepare</Text>
+            </View>
+          )
+        ) : (
+          completedOrders.length > 0 ? (
+            <FlatList
+              data={completedOrders}
+              renderItem={renderOrderItem}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <CheckCircle size={64} color={Colors.textLight} />
+              <Text style={styles.emptyTitle}>No Completed Orders</Text>
+              <Text style={styles.emptyText}>No orders have been completed yet</Text>
+            </View>
+          )
+        )}
+      </ScrollView>
+
+      {/* Receipt Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeImageModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Payment Receipt</Text>
+              <Pressable onPress={closeImageModal} style={styles.closeButton}>
+                <X size={24} color={Colors.text} />
+              </Pressable>
+            </View>
+            {selectedImage && (
+              <Image 
+                source={{ uri: selectedImage }} 
+                style={styles.fullImage} 
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  staffId: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.textLight,
+  },
+  logoutButton: {
+    padding: 8,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: Colors.background,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+    marginLeft: 8,
+  },
+  activeTabText: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  scrollContent: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  emptyTitle: {
+    fontSize: Fonts.sizes.xl,
+    fontWeight: '600',
+    color: Colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  loginButton: {
+    minWidth: 200,
+  },
+  orderCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  orderHeader: {
+    backgroundColor: Colors.primary,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  orderTitle: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.background,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateText: {
+    fontSize: Fonts.sizes.xs,
+    color: Colors.background,
+    marginLeft: 4,
+  },
+  orderDetails: {
+    padding: 16,
+  },
+  customerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  customerName: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
+  },
+  roleBadge: {
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  roleText: {
+    fontSize: Fonts.sizes.xs,
+    color: Colors.background,
+    fontWeight: '600',
+  },
+  deliveryInfo: {
+    backgroundColor: '#E8F5E9',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  deliveryText: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.secondary,
+    fontWeight: '500',
+  },
+  itemsList: {
+    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  itemQuantity: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.textLight,
+    width: 30,
+  },
+  itemName: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+    flex: 1,
+  },
+  itemPrice: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.primary,
+    fontWeight: '500',
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    marginBottom: 12,
+  },
+  totalLabel: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  totalAmount: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  paymentMethod: {
+    marginBottom: 16,
+  },
+  paymentText: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+  },
+  paymentValue: {
+    fontWeight: '600',
+  },
+  completeButton: {
+    marginTop: 8,
+  },
+  // Receipt image styles
+  receiptContainer: {
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#FFF8E1', // Light yellow background
+  },
+  receiptTitle: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  receiptImageContainer: {
+    position: 'relative',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  receiptThumbnail: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+  },
+  viewImageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+  },
+  viewImageText: {
+    color: Colors.background,
+    fontSize: Fonts.sizes.sm,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    overflow: 'hidden',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalTitle: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  fullImage: {
+    width: '100%',
+    height: 400,
+  },
+});
