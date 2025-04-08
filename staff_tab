@@ -1,0 +1,79 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { ArrowRight } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import StaffCard from '@/components/StaffCard';
+import { staffMembers } from '@/mocks/staff';
+
+export default function StaffTabScreen() {
+  const router = useRouter();
+
+  const navigateToStaff = () => {
+    router.push('/staff');
+  };
+
+  // Show only a few staff members in the tab view
+  const previewStaff = staffMembers.slice(0, 2);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Our Team</Text>
+        <Text style={styles.subtitle}>Meet the people who make it all happen</Text>
+        
+        <View style={styles.staffList}>
+          {previewStaff.map((staff) => (
+            <StaffCard key={staff.id} staff={staff} />
+          ))}
+        </View>
+        
+        <Pressable style={styles.viewAllButton} onPress={navigateToStaff}>
+          <Text style={styles.viewAllText}>View All Staff</Text>
+          <ArrowRight size={16} color={Colors.primary} />
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+    marginBottom: 24,
+  },
+  staffList: {
+    marginBottom: 16,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    marginBottom: 24,
+  },
+  viewAllText: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginRight: 8,
+  },
+});
