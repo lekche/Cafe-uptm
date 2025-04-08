@@ -1,0 +1,79 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { ArrowRight } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import MenuItem from '@/components/MenuItem';
+import { menuItems } from '@/mocks/menu';
+
+export default function MenuTabScreen() {
+  const router = useRouter();
+
+  const navigateToMenu = () => {
+    router.push('/menu');
+  };
+
+  // Show only a few items in the tab view
+  const previewItems = menuItems.slice(0, 3);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Our Menu</Text>
+        <Text style={styles.subtitle}>Delicious meals prepared fresh daily</Text>
+        
+        <View style={styles.menuList}>
+          {previewItems.map((item) => (
+            <MenuItem key={item.id} item={item} />
+          ))}
+        </View>
+        
+        <Pressable style={styles.viewAllButton} onPress={navigateToMenu}>
+          <Text style={styles.viewAllText}>View Full Menu</Text>
+          <ArrowRight size={16} color={Colors.primary} />
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+    marginBottom: 24,
+  },
+  menuList: {
+    marginBottom: 16,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    marginBottom: 24,
+  },
+  viewAllText: {
+    fontSize: Fonts.sizes.md,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginRight: 8,
+  },
+});
