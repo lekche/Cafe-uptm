@@ -1,0 +1,247 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { User, Key, Lock, FileText } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import Button from '@/components/Button';
+import { useAuthStore } from '@/store/auth-store';
+
+export default function StaffLoginScreen() {
+  const router = useRouter();
+  const staffLogin = useAuthStore(state => state.staffLogin);
+  
+  const [name, setName] = useState('');
+  const [staffId, setStaffId] = useState('');
+  const [password, setPassword] = useState('');
+  const [securityCode, setSecurityCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  
+  const handleLogin = () => {
+    setError('');
+    
+    if (!name.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+    
+    if (!staffId.trim()) {
+      setError('Please enter your Staff ID');
+      return;
+    }
+    
+    if (!password.trim()) {
+      setError('Please enter your password');
+      return;
+    }
+    
+    if (!securityCode.trim()) {
+      setError('Please enter the security code');
+      return;
+    }
+    
+    // Verify staff ID format (StaffKL + 6 digits)
+    const staffIdRegex = /^StaffKL\d{6}$/;
+    if (!staffIdRegex.test(staffId)) {
+      setError('Invalid Staff ID format');
+      return;
+    }
+    
+    // Verify security code
+    if (securityCode !== 'Staff_UPTM_01') {
+      setError('Invalid security code');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    // Simulate login process - now accepts any name
+    setTimeout(() => {
+      staffLogin({
+        name: name, // Use the entered name directly
+        staffId: staffId,
+        position: 'Staff' // Default position
+      });
+      
+      setIsSubmitting(false);
+      Alert.alert(
+        'Success',
+        'You have successfully logged in as staff',
+        [{ text: 'OK', onPress: () => router.push('/staff-dashboard') }]
+      );
+    }, 1000);
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Staff Login</Text>
+            <Text style={styles.subtitle}>Enter your credentials to access staff features</Text>
+          </View>
+          
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+          
+          <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <View style={styles.inputIcon}>
+                <User size={20} color={Colors.primary} />
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Staff Name"
+                value={name}
+                onChangeText={setName}
+                placeholderTextColor={Colors.textLight}
+              />
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <View style={styles.inputIcon}>
+                <FileText size={20} color={Colors.primary} />
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Staff ID"
+                value={staffId}
+                onChangeText={setStaffId}
+                placeholderTextColor={Colors.textLight}
+                autoCapitalize="none"
+              />
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <View style={styles.inputIcon}>
+                <Key size={20} color={Colors.primary} />
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor={Colors.textLight}
+              />
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <View style={styles.inputIcon}>
+                <Lock size={20} color={Colors.primary} />
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Security Code"
+                value={securityCode}
+                onChangeText={setSecurityCode}
+                placeholderTextColor={Colors.textLight}
+                autoCapitalize="none"
+                secureTextEntry={true}
+              />
+            </View>
+            
+            <Button
+              title="Login as Staff"
+              onPress={handleLogin}
+              loading={isSubmitting}
+              style={styles.loginButton}
+            />
+          </View>
+          
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>
+              Staff login is restricted to authorized personnel only. 
+              Contact your manager if you have trouble logging in.
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: Fonts.sizes.xxl,
+    fontWeight: Fonts.weights.bold,
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: Fonts.sizes.md,
+    color: Colors.textLight,
+  },
+  errorContainer: {
+    backgroundColor: '#FFEBEE',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.error,
+  },
+  errorText: {
+    color: Colors.error,
+    fontSize: Fonts.sizes.md,
+  },
+  formContainer: {
+    marginBottom: 24,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  inputIcon: {
+    padding: 12,
+    borderRightWidth: 1,
+    borderRightColor: Colors.border,
+  },
+  input: {
+    flex: 1,
+    padding: 12,
+    fontSize: Fonts.sizes.md,
+    color: Colors.text,
+  },
+  loginButton: {
+    marginTop: 8,
+  },
+  infoContainer: {
+    padding: 16,
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+  },
+  infoText: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.text,
+    lineHeight: 20,
+  },
+});
