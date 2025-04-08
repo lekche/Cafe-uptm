@@ -1,0 +1,65 @@
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { User } from 'lucide-react-native';
+import Colors from '@/constants/colors';
+import Fonts from '@/constants/fonts';
+import { StaffMember } from '@/mocks/staff';
+
+type StaffCardProps = {
+  staff: StaffMember;
+};
+
+export default function StaffCard({ staff }: StaffCardProps) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.iconContainer}>
+        <User size={40} color={Colors.primary} />
+      </View>
+      <View style={styles.content}>
+        <Text style={styles.name}>{staff.name}</Text>
+        <Text style={styles.position}>{staff.position}</Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    flexDirection: 'row',
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+  },
+  name: {
+    fontSize: Fonts.sizes.lg,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  position: {
+    fontSize: Fonts.sizes.sm,
+    color: Colors.textLight,
+  },
+});
